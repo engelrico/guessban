@@ -80,18 +80,10 @@ mv minimal.yaml .guessban.yaml
 curl -O https://raw.githubusercontent.com/engelrico/guessban/main/guessban-definitions.md
 ```
 
-**Step 3** — Add this block to your `constitution.md`:
+**Step 3** — Add the Guessban policy block to your `constitution.md`:
 
-```markdown
-## Agent Clarification Policy
-Before implementing any task, read `.guessban.yaml` in the project root.
-Read `guessban-definitions.md` for the definition of each stop_on trigger.
-If a `stop_on` condition is met: output BLOCKED + reason, do not proceed.
-If `allowed: true`: ask max `max_questions` questions before starting.
-If no `.guessban.yaml` exists: ask max 2 questions, stop on missing
-schema or conflicting requirements.
-Never guess silently. A short question beats wrong code.
-```
+→ Copy the block from [`guessban-constitution-snippet.md`](guessban-constitution-snippet.md)
+
 
 **Step 4** — Run `/speckit.implement` as usual. Done.
 
