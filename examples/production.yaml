@@ -1,0 +1,17 @@
+# Guessban - Production Config
+# Strict mode. Agent must stop on any ambiguity.
+# Recommended for critical features and production systems.
+
+clarification_policy:
+  allowed: true
+  max_questions: 3
+  stop_on:
+    - missing_data_schema
+    - conflicting_requirements
+    - undefined_auth_model
+    - no_spec_reference
+    - missing_api_contract
+    - undocumented_side_effects
+    - breaking_change_detected
+    - pii_without_policy
+  default_if_silent: fail_task
