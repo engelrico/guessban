@@ -5,7 +5,6 @@ This tells the agent how to read and apply your `.guessban.yaml` policy.
 
 ---
 
-```markdown
 ## Agent Clarification Policy (Guessban)
 
 Before starting any implementation task:
@@ -21,17 +20,13 @@ Wait for answers before writing any code.
 **After reaching `max_questions`, apply `default_if_silent`:**
 
 - `proceed` — continue implementation, make internal assumptions silently
-- `warn` — continue implementation, but first output a explicit list of every assumption you are making and why
-- `fail_task` — stop completely, do not write any code, output:
-  ```
-  🙋 GUESSBAN: Cannot proceed without clarification.
-  Open questions:
-  - [list every unresolved question here]
-  ```
+- `warn` — continue implementation, but first output an explicit list of every assumption you are making and why
+- `fail_task` — stop completely, do not write any code.
+  Output the message "🙋 GUESSBAN: Cannot proceed without clarification."
+  followed by a numbered list of every unresolved question.
 
 **If no `.guessban.yaml` is found:**
 Apply default behavior: max 2 questions, stop on `missing_data_schema`
 or `conflicting_requirements`, then `warn`.
 
 Never guess silently. A short question beats wrong code.
-```
