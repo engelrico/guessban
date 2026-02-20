@@ -1,4 +1,4 @@
-# 🚫 Guessban
+# 💡 Guessban
 
 > Your AI agent is guessing. Guessban stops that.
 
@@ -20,7 +20,7 @@ You review it, rewrite it, lose an hour.
 
 ## The Fix
 
-Drop one file into your repo. Define exactly when your agent must stop and ask
+Drop two files into your repo. Define exactly when your agent must stop and ask
 instead of silently hallucinating a solution.
 
 ```yaml
@@ -70,15 +70,22 @@ Agent hits ambiguity  →    Agent hits ambiguity
 **Step 1** — Copy `.guessban.yaml` into your project root:
 
 ```bash
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/guessban/main/examples/minimal.yaml
+curl -O https://raw.githubusercontent.com/engelrico/guessban/main/examples/minimal.yaml
 mv minimal.yaml .guessban.yaml
 ```
 
-**Step 2** — Add this block to your `constitution.md`:
+**Step 2** — Copy `guessban-definitions.md` into your project root:
+
+```bash
+curl -O https://raw.githubusercontent.com/engelrico/guessban/main/guessban-definitions.md
+```
+
+**Step 3** — Add this block to your `constitution.md`:
 
 ```markdown
 ## Agent Clarification Policy
 Before implementing any task, read `.guessban.yaml` in the project root.
+Read `guessban-definitions.md` for the definition of each stop_on trigger.
 If a `stop_on` condition is met: output BLOCKED + reason, do not proceed.
 If `allowed: true`: ask max `max_questions` questions before starting.
 If no `.guessban.yaml` exists: ask max 2 questions, stop on missing
@@ -86,7 +93,7 @@ schema or conflicting requirements.
 Never guess silently. A short question beats wrong code.
 ```
 
-**Step 3** — Run `/speckit.implement` as usual. Done.
+**Step 4** — Run `/speckit.implement` as usual. Done.
 
 ---
 
@@ -105,6 +112,9 @@ Never guess silently. A short question beats wrong code.
 - `undefined_auth_model`
 - `no_spec_reference`
 - `missing_api_contract`
+
+> All trigger names and their meanings are defined in `guessban-definitions.md`.
+> You can add custom triggers — just define them there too.
 
 ---
 
