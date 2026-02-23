@@ -1,148 +1,144 @@
-# 💡 Guessban
+# Guessban
 
-> Your AI agent is guessing. Guessban stops that.
+**Guessban** is a policy-based guard for Spec-Driven Development with [SpecKit](https://github.com/github/spec-kit).
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Works with SpecKit](https://img.shields.io/badge/works%20with-SpecKit-8A2BE2)](https://github.com/github/spec-kit)
-[![YAML](https://img.shields.io/badge/config-.guessban.yaml-green)](examples/)
+It prevents AI agents from implementing code when the spec is not ready,
+and catches drift between spec and code during implementation.
 
 ---
 
 ## The Problem
 
-Your AI coding agent hits an ambiguous requirement.
-It doesn't ask. It guesses. It ships wrong code.
-You review it, rewrite it, lose an hour.
+AI coding agents are fast. Too fast.
 
-**Repeat.**
+`/speckit.analyze` finds problems. But nothing stops the agent from
+implementing anyway – ignoring CRITICAL findings, skipping missing schemas,
+or generating code that contradicts the spec.
 
----
-
-## The Fix
-
-Drop two files into your repo. Define exactly when your agent must stop and ask
-instead of silently hallucinating a solution.
-
-```yaml
-# .guessban.yaml
-clarification_policy:
-  allowed: true
-  max_questions: 2
-  stop_on:
-    - missing_data_schema
-    - conflicting_requirements
-    - undefined_auth_model
-    - no_spec_reference
-  default_if_silent: fail_task
-```
-
-That's it. No install. No dependencies. No magic.
+Guessban enforces the stop.
 
 ---
 
 ## How It Works
 
-Guessban works as a **SpecKit companion**. Add the policy snippet to your
-`constitution.md` once — and every subsequent `/speckit.implement` call
-respects your project's clarification rules.
+Guessban runs as a policy gate at two points in the SpecKit workflow:
 
 ```
-Without Guessban           With Guessban
-──────────────────         ──────────────────────────────
-Agent hits ambiguity  →    Agent hits ambiguity
-       ↓                          ↓
-  Keeps going           Checks .guessban.yaml
-       ↓                          ↓
- Wrong code shipped       stop_on: missing_data_schema
-       ↓                          ↓
-  You fix it             🛑 BLOCKED: "What's the schema
-       ↓                    for the users table?"
- 30 min wasted                    ↓
-                           You answer in 10 seconds
-                                  ↓
-                            Correct code shipped ✅
+/speckit.analyze
+      ↓
+ [GUESSBAN pre_analyze]   ← blocks if spec is not ready
+      ↓
+/speckit.implement (task)
+      ↓
+ [GUESSBAN mid_impl]      ← blocks if code drifts from spec
+      ↓
+ next task...
+```
+
+You define which findings are blocking in `.guessban.yaml`.
+The agent constitution snippet tells your AI agent to enforce the policy.
+
+---
+
+## Quick Start
+
+**1. Add `.guessban.yaml` to your project root:**
+
+```yaml
+version: "1.0"
+mode: pre_analyze
+
+pre_analyze:
+  stop_on:
+    - missing_data_schema
+    - undefined_auth_model
+    - conflicting_requirements
+    - no_spec_reference
+```
+
+**2. Add the constitution snippet to your agent:**
+
+Copy the relevant section from `guessban-constitution-snippet.md` into your
+agent's system prompt or instructions file
+(e.g. `.github/copilot-instructions.md`).
+
+**3. Run your SpecKit workflow as usual:**
+
+```
+/speckit.clarify → /speckit.plan → /speckit.tasks → /speckit.analyze
+```
+
+Guessban activates automatically when the agent reads the constitution snippet.
+
+---
+
+## Modes
+
+| Mode | When it runs | Blocks |
+|------|-------------|--------|
+| `pre_analyze` | After `/speckit.analyze`, before `/speckit.implement` | If spec is not ready |
+| `mid_impl` | After each implemented task | If code drifts from spec |
+| `both` | Both points | Both cases |
+
+See `guessban-workflow.md` for a detailed decision guide.
+
+---
+
+## Triggers
+
+Guessban ships with built-in triggers covering the most common spec quality issues:
+
+**Pre-Analyze:**
+- `missing_data_schema` – No DB schema for core entities
+- `undefined_auth_model` – Auth mentioned but roles missing
+- `conflicting_requirements` – Contradictory requirements
+- `no_spec_reference` – Task without spec coverage
+- `breaking_change_detected` – Incompatible API change
+
+**Mid-Impl:**
+- `breaking_spec_change` – Code contradicts spec
+- `new_missing_schema` – Schema dependency surfaced during impl
+- `task_spec_deviation` – Task does not implement what spec says
+- `security_pattern_violated` – Auth/security pattern ignored
+
+Full definitions and severities: see `guessban-definitions.md`.
+
+---
+
+## Custom Triggers
+
+```yaml
+custom_triggers:
+  - id: no_i18n_keys
+    severity: HIGH
+    description: "A UI string was hardcoded instead of using i18n keys."
+    match: "hardcoded_string_in_ui"
 ```
 
 ---
 
-## Setup (2 minutes)
+## Files
 
-**Step 1** — Copy `.guessban.yaml` into your project root:
-
-```bash
-curl -O https://raw.githubusercontent.com/engelrico/guessban/main/examples/minimal.yaml
-mv minimal.yaml .guessban.yaml
-```
-
-**Step 2** — Copy `guessban-definitions.md` into your project root:
-
-```bash
-curl -O https://raw.githubusercontent.com/engelrico/guessban/main/guessban-definitions.md
-```
-
-**Step 3** — Add the Guessban policy block to your `constitution.md`:
-
-→ Copy the block from [`guessban-constitution-snippet.md`](guessban-constitution-snippet.md)
-
-
-**Step 4** — Run `/speckit.implement` as usual. Done.
-
----
-
-## Config Options
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `allowed` | boolean | `true` | Agent may ask clarifying questions |
-| `max_questions` | integer (1–5) | `2` | Max questions before proceeding |
-| `stop_on` | string[] | see below | Conditions that trigger a hard stop |
-| `default_if_silent` | enum | `warn` | Behavior if no config found: `fail_task` / `warn` / `proceed` |
-
-**Default `stop_on` triggers:**
-- `missing_data_schema`
-- `conflicting_requirements`
-- `undefined_auth_model`
-- `no_spec_reference`
-- `missing_api_contract`
-
-> All trigger names and their meanings are defined in `guessban-definitions.md`.
-> You can add custom triggers — just define them there too.
+| File | Purpose |
+|------|---------|
+| `.guessban.yaml` | Policy configuration |
+| `guessban-definitions.md` | All trigger definitions and severities |
+| `guessban-constitution-snippet.md` | Agent instructions for pre_analyze and mid_impl |
+| `guessban-workflow.md` | When to use which mode and how to resolve blocks |
+| `examples/` | Ready-to-use config examples |
 
 ---
 
 ## Examples
 
-| File | Use Case |
-|---|---|
-| [`examples/minimal.yaml`](examples/minimal.yaml) | Quick start, sensible defaults |
-| [`examples/production.yaml`](examples/production.yaml) | Strict mode, `fail_task` on any ambiguity |
-| [`examples/greenfield.yaml`](examples/greenfield.yaml) | Relaxed mode for early exploration |
+See the `examples/` folder for ready-to-use configurations:
 
----
-
-## Why Not Just Use SpecKit's `/clarify`?
-
-SpecKit's built-in clarify mode runs **before** the spec is written.
-Guessban runs **during implementation** — where most hallucinations happen.
-
-| | SpecKit `/clarify` | Guessban |
-|---|---|---|
-| Active in specify step | ✅ | ✅ |
-| Active in implement step | ❌ | ✅ |
-| Project-specific config | ❌ | ✅ |
-| Configurable stop triggers | ❌ | ✅ |
-| Hard fail on ambiguity | ❌ | ✅ |
-| Versioned in Git | ❌ | ✅ |
-
----
-
-## Contributing
-
-Ideas, examples for other tools (Cursor, Copilot Chat, Claude Code),
-or edge cases you've hit — all welcome. Open an issue or PR.
+- `examples/pre_analyze/` – Minimal gate before implementation
+- `examples/mid_impl/` – Per-task guard during implementation
+- `examples/both/` – Full coverage for brownfield + team projects
 
 ---
 
 ## License
 
-MIT © 2026 riCo
+MIT
