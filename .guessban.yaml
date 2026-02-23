@@ -1,14 +1,88 @@
-# Guessban - Active Policy
-# https://github.com/engelrico/guessban
+# .guessban.yaml
+# Guessban Policy Configuration
+# Docs: https://github.com/engelrico/guessban
 
-mode: pre_analyze  # oder: mid_impl, oder: both
+version: "1.0"
 
-stop_on:
-  - missing_data_schema
-  - undefined_auth_model
+# ─────────────────────────────────────────
+# MODE
+# pre_analyze : blocks after /analyze, before /implement
+# mid_impl    : blocks after each task during /implement
+# both        : both modes active
+# ─────────────────────────────────────────
+mode: both
 
-mid_impl:
-  check_after: task   # neu: wann im impl-Prozess
+
+# ─────────────────────────────────────────
+# PRE-ANALYZE MODE
+# Runs after /speckit.analyze
+# Blocks before /implement starts
+# ─────────────────────────────────────────
+pre_analyze:
   stop_on:
-    - breaking_spec_change
-    - new_missing_schema
+    - missing_data_schema          # No DB schema defined for core entities
+    - undefined_auth_model         # Auth mentioned but roles are missing
+    - conflicting_requirements     # Contradictory requirements detected
+    - no_spec_reference            # Task has no spec coverage
+    - breaking_change_detected     # Incompatible API change detected
+
+  warn_on:
+    - missing_error_handling       # Error cases not specified
+    - performance_not_addressed    # No performance criteria defined
+    - incomplete_acceptance_criteria
+
+  ignore:
+    - style_inconsistency
+    - minor_naming_convention
+
+
+# ─────────────────────────────────────────
+# MID-IMPL MODE
+# Runs after each implemented task
+# Scans generated code against spec
+# ─────────────────────────────────────────
+mid_impl:
+  check_after: task                # task | file | phase
+
+  stop_on:
+    - breaking_spec_change         # Generated code deviates from spec
+    - new_missing_schema           # New schema issue surfaced during impl
+    - task_spec_deviation          # Task does not implement what spec says
+    - security_pattern_violated    # Auth/security pattern ignored
+
+  warn_on:
+    - partial_spec_coverage        # Task only partially implemented
+    - undocumented_side_effect     # Unexpected changes outside task scope
+
+  on_block:
+    action: stop                   # stop | pause | flag
+    message: |
+      Guessban blocked: {trigger}
+      Task: {task.id} – {task.title}
+      Reason: {finding.description}
+      Fix: Update spec or resolve finding before continuing.
+
+
+# ─────────────────────────────────────────
+# SCOPE
+# Which tasks and files are checked
+# ─────────────────────────────────────────
+scope:
+  include:
+    - "specs/**"
+    - "tasks/**"
+    - "src/**"
+  exclude:
+    - "**/*.test.*"
+    - "**/migrations/**"
+    - "docs/**"
+
+
+# ─────────────────────────────────────────
+# OUTPUT
+# ─────────────────────────────────────────
+output:
+  format: markdown                 # markdown | json | plain
+  verbose: false
+  save_report: true
+  report_path: ".guessban/reports/{date}-{mode}.md"
