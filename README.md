@@ -1,5 +1,13 @@
 # Guessban
 
+[![SpecKit Compatible](https://img.shields.io/badge/SpecKit-compatible-blue)](https://github.com/github/spec-kit)
+[![Mode: pre_analyze](https://img.shields.io/badge/mode-pre__analyze-orange)](https://github.com/engelrico/guessban)
+[![Mode: mid_impl](https://img.shields.io/badge/mode-mid__impl-orange)](https://github.com/engelrico/guessban)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Works with Copilot](https://img.shields.io/badge/works%20with-GitHub%20Copilot-blue)](https://github.com/features/copilot)
+[![Works with Cursor](https://img.shields.io/badge/works%20with-Cursor-blue)](https://cursor.com)
+[![Works with Claude](https://img.shields.io/badge/works%20with-Claude-blue)](https://claude.ai)
+
 **Guessban** is a policy-based guard for Spec-Driven Development with [SpecKit](https://github.com/github/spec-kit).
 
 It prevents AI agents from implementing code when the spec is not ready,
@@ -40,9 +48,83 @@ The agent constitution snippet tells your AI agent to enforce the policy.
 
 ---
 
+## Setup: Files to Copy Into Your Project
+
+### Step 1 – Policy config (required)
+
+```bash
+curl -o .guessban.yaml \
+  https://raw.githubusercontent.com/engelrico/guessban/main/.guessban.yaml
+```
+
+Edit `.guessban.yaml` to match your project's needs.
+
+---
+
+### Step 2 – Agent instructions (required)
+
+```bash
+curl -o guessban-constitution-snippet.md \
+  https://raw.githubusercontent.com/engelrico/guessban/main/guessban-constitution-snippet.md
+```
+
+Then paste the relevant section into your agent's instructions file:
+
+| Agent | Instructions file |
+|-------|------------------|
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Cursor | `.cursor/rules` or `.cursorrules` |
+| Claude (Projects) | Project instructions field |
+| Windsurf | `.windsurf/instructions.md` |
+
+---
+
+### Step 3 – Trigger definitions (required)
+
+Your agent needs this file to understand what each trigger means.
+
+```bash
+curl -o guessban-definitions.md \
+  https://raw.githubusercontent.com/engelrico/guessban/main/guessban-definitions.md
+```
+
+---
+
+### Step 4 – Workflow guide (required)
+
+Explains which mode to use and how to resolve blocks. Keep it in your project
+so your team and your agent can reference it.
+
+```bash
+curl -o guessban-workflow.md \
+  https://raw.githubusercontent.com/engelrico/guessban/main/guessban-workflow.md
+```
+
+---
+
+### All at once
+
+```bash
+curl -o .guessban.yaml \
+  https://raw.githubusercontent.com/engelrico/guessban/main/.guessban.yaml
+
+curl -o guessban-constitution-snippet.md \
+  https://raw.githubusercontent.com/engelrico/guessban/main/guessban-constitution-snippet.md
+
+curl -o guessban-definitions.md \
+  https://raw.githubusercontent.com/engelrico/guessban/main/guessban-definitions.md
+
+curl -o guessban-workflow.md \
+  https://raw.githubusercontent.com/engelrico/guessban/main/guessban-workflow.md
+```
+
+---
+
 ## Quick Start
 
-**1. Add `.guessban.yaml` to your project root:**
+**1.** Copy all four files into your project root (see above).
+
+**2.** Edit `.guessban.yaml` to configure your policy:
 
 ```yaml
 version: "1.0"
@@ -56,13 +138,10 @@ pre_analyze:
     - no_spec_reference
 ```
 
-**2. Add the constitution snippet to your agent:**
+**3.** Paste the relevant section from `guessban-constitution-snippet.md`
+into your agent's instructions file.
 
-Copy the relevant section from `guessban-constitution-snippet.md` into your
-agent's system prompt or instructions file
-(e.g. `.github/copilot-instructions.md`).
-
-**3. Run your SpecKit workflow as usual:**
+**4.** Run your SpecKit workflow as usual:
 
 ```
 /speckit.clarify → /speckit.plan → /speckit.tasks → /speckit.analyze
@@ -117,7 +196,7 @@ custom_triggers:
 
 ---
 
-## Files
+## Files in This Repo
 
 | File | Purpose |
 |------|---------|
@@ -126,16 +205,6 @@ custom_triggers:
 | `guessban-constitution-snippet.md` | Agent instructions for pre_analyze and mid_impl |
 | `guessban-workflow.md` | When to use which mode and how to resolve blocks |
 | `examples/` | Ready-to-use config examples |
-
----
-
-## Examples
-
-See the `examples/` folder for ready-to-use configurations:
-
-- `examples/pre_analyze/` – Minimal gate before implementation
-- `examples/mid_impl/` – Per-task guard during implementation
-- `examples/both/` – Full coverage for brownfield + team projects
 
 ---
 
