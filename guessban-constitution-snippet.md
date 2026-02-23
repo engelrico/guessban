@@ -1,34 +1,95 @@
-# Guessban — Constitution Snippet
+# Guessban – Agent Constitution Snippet
 
-Copy the block below into your project's `constitution.md`.
-This tells the agent how to read and apply your `.guessban.yaml` policy.
+Copy the relevant section into your agent's system prompt or
+constitution file (e.g. `.github/copilot-instructions.md`).
+Use the Pre-Analyze snippet, the Mid-Impl snippet, or both.
 
 ---
 
-````markdown
-## Agent Clarification Policy (Guessban)
+## Pre-Analyze Mode
 
-Before starting any implementation task:
+Add this to your agent constitution to enforce Guessban before implementation starts.
 
-1. Read `.guessban.yaml` in the project root.
-2. Read `guessban-definitions.md` for the meaning of each `stop_on` trigger.
-3. Check if any `stop_on` condition applies to the current task.
+---
 
-**If a `stop_on` condition is met:**
-Ask up to `max_questions` clarifying questions before proceeding.
-Wait for answers before writing any code.
+### Guessban Pre-Analyze Policy
 
-**After reaching `default_if_silent`, apply:**
+Before calling any implementation tool or generating any code, you MUST run
+`/speckit.analyze` and evaluate the output against the Guessban policy defined
+in `.guessban.yaml`.
 
-- `proceed` — continue implementation, make internal assumptions silently
-- `warn` — continue implementation, but first output an explicit list of every assumption you are making and why
-- `fail_task` — stop completely, do not write any code.
-  Output the message "🙋 GUESSBAN: Cannot proceed without clarification."
-  followed by a numbered list of every unresolved question.
+**Rules:**
+- Load `.guessban.yaml` from the project root.
+- Read the `pre_analyze.stop_on` list.
+- If `/speckit.analyze` returns any finding whose trigger ID matches an entry
+  in `stop_on`, you MUST stop immediately.
+- Do NOT proceed to `/speckit.implement` or generate any code.
+- Output a block message in this format:
 
-**If no `.guessban.yaml` is found:**
-Apply default behavior: max 2 questions, stop on `missing_data_schema`
-or `conflicting_requirements`, then `warn`.
+```
+🚫 GUESSBAN BLOCKED [pre_analyze]
 
-Never guess silently. A short question beats wrong code.
-````
+Trigger : {trigger_id}
+Finding : {finding.description}
+Severity: {finding.severity}
+Task    : {task.id} – {task.title}
+
+Resolution required before implementation can continue.
+Update the spec or resolve the finding, then re-run /speckit.analyze.
+```
+
+- If findings match `warn_on` only, output a warning but allow implementation to proceed.
+- If no findings match `stop_on` or `warn_on`, output:
+
+```
+✅ GUESSBAN PASSED [pre_analyze] – No blocking findings. Proceeding to implementation.
+```
+
+---
+
+## Mid-Impl Mode
+
+Add this to your agent constitution to enforce Guessban after each implemented task.
+
+---
+
+### Guessban Mid-Impl Policy
+
+After each task is implemented and before starting the next task, you MUST
+evaluate the generated code against the Guessban policy defined in `.guessban.yaml`.
+
+**Rules:**
+- Load `.guessban.yaml` from the project root.
+- Read the `mid_impl.stop_on` list.
+- After each task completes (based on `mid_impl.check_after: task`), scan the
+  generated code against the current spec.
+- If any new finding matches an entry in `stop_on`, you MUST stop immediately.
+- Do NOT start the next task.
+- Output a block message in this format:
+
+```
+🚫 GUESSBAN BLOCKED [mid_impl]
+
+Trigger : {trigger_id}
+Finding : {finding.description}
+Severity: {finding.severity}
+Task    : {task.id} – {task.title}
+
+Resolution required before the next task can start.
+Fix the implementation or update the spec, then re-run this task.
+```
+
+- If findings match `warn_on` only, output a warning but allow the next task to start.
+- If no findings match `stop_on` or `warn_on`, output:
+
+```
+✅ GUESSBAN PASSED [mid_impl] – Task {task.id} clean. Proceeding to next task.
+```
+
+---
+
+## Both Modes
+
+To use both modes, include both snippets in your agent constitution.
+Pre-Analyze runs first. Mid-Impl runs after each task.
+A passing Pre-Analyze does not skip Mid-Impl checks.
